@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, TableProperties, ShieldAlert, HeartHandshake, Flame, Snowflake, Radiation } from 'lucide-react';
+import { LayoutDashboard, TableProperties, ShieldAlert, HeartHandshake, Flame, Snowflake, Radiation, Compass } from 'lucide-react';
 import { Language, ViewMode } from '../types';
 
 interface SidebarProps {
@@ -78,6 +78,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span className={`${language === 'ar' ? 'mr-auto' : 'ml-auto'} font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300`}>
                   10 Total
                 </span>
+              </button>
+
+              <button
+                onClick={() => {
+                  onSelectView('map');
+                  onCloseMobile();
+                }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                  viewMode === 'map'
+                    ? 'bg-cyan-950/60 text-cyan-300 border border-cyan-600/40 shadow-sm'
+                    : 'text-slate-300 hover:bg-[#152445] hover:text-white border border-transparent'
+                }`}
+              >
+                <Compass className="w-4 h-4 text-cyan-400" />
+                <span>{language === 'ar' ? 'الخارطة الجغرافية للحقل (GIS)' : 'GIS Field Facility Map'}</span>
               </button>
 
               <button

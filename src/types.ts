@@ -1,5 +1,5 @@
 export type Language = 'ar' | 'en';
-export type ViewMode = 'grid' | 'table';
+export type ViewMode = 'grid' | 'table' | 'map';
 export type RiskLevel = 'CRITICAL RISK' | 'HIGH RISK (CLASS A)' | 'HIGH RISK' | 'MEDIUM RISK' | 'CRITICAL (3.3 kV)' | 'CRITICAL';
 
 export type UserRole = 'ADMIN' | 'HSE_OFFICER' | 'CONTRACTOR' | 'AUDITOR';
@@ -118,6 +118,7 @@ export interface PTWItem {
   equipmentName?: string;
   equipmentLine?: string;
   tagNo?: string;
+  equipmentTag?: string;
   department?: string;
   toolsRequired?: string;
   peopleDay?: number;

@@ -10,6 +10,8 @@ import { PermitModal } from './components/PermitModal';
 import { AuditModal } from './components/AuditModal';
 import { PrintReportView } from './components/PrintReportView';
 import { UserLoginModal } from './components/UserLoginModal';
+import { CreatePermitModal } from './components/CreatePermitModal';
+import { FieldMapView } from './components/FieldMapView';
 import { ToastContainer } from './components/Toast';
 import { INITIAL_PTW_DATA } from './data/mockData';
 import { Language, ViewMode, PTWItem, ToastMessage, NotificationItem } from './types';
@@ -59,6 +61,7 @@ export default function App() {
   const [isAuditModalOpen, setIsAuditModalOpen] = useState<boolean>(false);
   const [isPrintReportOpen, setIsPrintReportOpen] = useState<boolean>(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
+  const [isCreatePermitOpen, setIsCreatePermitOpen] = useState<boolean>(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
@@ -239,6 +242,56 @@ export default function App() {
     );
   };
 
+  const handlePermitCreated = (newPermit: PTWItem) => {
+    setItems((prev) => ({
+      [newPermit.key]: newPermit,
+      ...prev,
+    }));
+    setActiveModalKey(newPermit.key);
+  };
+
+  const handleExportData = (format: 'csv' | 'json') => {
+    const permitList = Object.values(items) as PTWItem[];
+    if (format === 'json') {
+      const jsonStr = JSON.stringify(permitList, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ZFOD-PTW-Export-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast(
+        language === 'ar' ? 'تم تنزيل بيانات التصاريح بصيغة JSON ✓' : 'Permits exported to JSON ✓',
+        'success'
+      );
+    } else {
+      const headers = ['Permit No', 'Type', 'Status', 'Risk', 'Location (EN)', 'Contractor (EN)', 'Validity', 'Equipment'];
+      const rows = permitList.map((p) => [
+        `"${p.permitNo || ''}"`,
+        `"${p.isMainPermit ? 'MAIN' : 'CERT'}"`,
+        `"${p.status || ''}"`,
+        `"${p.risk || ''}"`,
+        `"${(p.locationEn || '').replace(/"/g, '""')}"`,
+        `"${(p.contractorEn || '').replace(/"/g, '""')}"`,
+        `"${(p.validityWindow || '').replace(/"/g, '""')}"`,
+        `"${(p.equipmentTag || p.tagNo || '').replace(/"/g, '""')}"`,
+      ]);
+      const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ZFOD-PTW-Registry-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast(
+        language === 'ar' ? 'تم تنزيل سجل التصاريح بصيغة CSV (Excel) ✓' : 'Permits exported to CSV (Excel) ✓',
+        'success'
+      );
+    }
+  };
+
   const hasActiveFilters = statusFilter !== 'ALL' || riskFilter !== 'ALL' || contractorFilter !== 'ALL' || searchQuery.trim() !== '';
 
   const activeModalItem = activeModalKey ? items[activeModalKey] : null;
@@ -326,6 +379,8 @@ export default function App() {
             viewMode={viewMode}
             onViewChange={setViewMode}
             onPrintReport={() => setIsPrintReportOpen(true)}
+            onOpenCreateModal={() => setIsCreatePermitOpen(true)}
+            onExportData={handleExportData}
             statusFilter={statusFilter}
             onStatusFilterChange={setStatusFilter}
             riskFilter={riskFilter}
@@ -337,7 +392,7 @@ export default function App() {
             totalResultsCount={Object.keys(items).length}
           />
 
-          {/* Grid View or Registry Table */}
+          {/* Grid View or Registry Table or GIS Field Map */}
           {viewMode === 'grid' ? (
             <PermitCardsGrid
               language={language}
@@ -348,7 +403,7 @@ export default function App() {
               riskFilter={riskFilter}
               contractorFilter={contractorFilter}
             />
-          ) : (
+          ) : viewMode === 'table' ? (
             <RegistryTable
               language={language}
               items={items}
@@ -358,9 +413,24 @@ export default function App() {
               riskFilter={riskFilter}
               contractorFilter={contractorFilter}
             />
+          ) : (
+            <FieldMapView
+              language={language}
+              items={items}
+              onOpenModal={(key) => setActiveModalKey(key)}
+            />
           )}
         </main>
       </div>
+
+      {/* New Permit Creation Wizard with AI Hazard Evaluation */}
+      <CreatePermitModal
+        language={language}
+        isOpen={isCreatePermitOpen}
+        onClose={() => setIsCreatePermitOpen(false)}
+        onCreated={handlePermitCreated}
+        onShowToast={showToast}
+      />
 
       {/* Interactive Detail Modal with Gas Testing, AI & Sign-offs */}
       {activeModalItem && (

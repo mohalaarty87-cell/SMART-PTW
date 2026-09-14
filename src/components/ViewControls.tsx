@@ -1,12 +1,14 @@
-import React from 'react';
-import { LayoutGrid, Table, Printer, Filter, RotateCcw, AlertTriangle } from 'lucide-react';
-import { Language, ViewMode, PTWStatus, RiskLevel } from '../types';
+import React, { useState } from 'react';
+import { LayoutGrid, Table, Printer, Filter, RotateCcw, Compass, Plus, Download, FileSpreadsheet, FileJson } from 'lucide-react';
+import { Language, ViewMode } from '../types';
 
 interface ViewControlsProps {
   language: Language;
   viewMode: ViewMode;
   onViewChange: (mode: ViewMode) => void;
   onPrintReport: () => void;
+  onOpenCreateModal: () => void;
+  onExportData: (format: 'csv' | 'json') => void;
   statusFilter: string;
   onStatusFilterChange: (status: string) => void;
   riskFilter: string;
@@ -23,6 +25,8 @@ export const ViewControls: React.FC<ViewControlsProps> = ({
   viewMode,
   onViewChange,
   onPrintReport,
+  onOpenCreateModal,
+  onExportData,
   statusFilter,
   onStatusFilterChange,
   riskFilter,
@@ -33,6 +37,8 @@ export const ViewControls: React.FC<ViewControlsProps> = ({
   hasActiveFilters,
   totalResultsCount,
 }) => {
+  const [showExportMenu, setShowExportMenu] = useState(false);
+
   return (
     <div className="space-y-3 pb-3 border-b border-[#1c2b4c]">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -51,7 +57,17 @@ export const ViewControls: React.FC<ViewControlsProps> = ({
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          {/* View Switcher */}
+          {/* Issue New Permit Action */}
+          <button
+            id="issue-new-permit-btn"
+            onClick={onOpenCreateModal}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-lg bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white shadow-lg shadow-cyan-950/40 transition cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>{language === 'ar' ? 'إصدار تصريح جديد' : 'Issue New Permit'}</span>
+          </button>
+
+          {/* View Switcher (Grid, Table, GIS Map) */}
           <div className="flex items-center rounded-lg bg-[#0b1324] border border-[#1c2b4c] p-0.5 shadow-inner">
             <button
               id="view-btn-grid"
@@ -78,6 +94,59 @@ export const ViewControls: React.FC<ViewControlsProps> = ({
               <Table className="w-3.5 h-3.5" />
               <span>{language === 'ar' ? 'سجل الجدول' : 'Registry Table'}</span>
             </button>
+
+            <button
+              id="view-btn-map"
+              onClick={() => onViewChange('map')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition cursor-pointer ${
+                viewMode === 'map'
+                  ? 'bg-cyan-950 text-cyan-300 border border-cyan-600/40 shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Compass className="w-3.5 h-3.5" />
+              <span>{language === 'ar' ? 'خارطة المنشآت (GIS)' : 'GIS Field Map'}</span>
+            </button>
+          </div>
+
+          {/* Export Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#101b33] hover:bg-[#152445] text-slate-200 border border-[#1c2b4c] transition cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 text-emerald-400" />
+              <span>{language === 'ar' ? 'تصدير' : 'Export'}</span>
+            </button>
+
+            {showExportMenu && (
+              <div
+                className={`absolute ${
+                  language === 'ar' ? 'left-0' : 'right-0'
+                } mt-2 w-44 rounded-xl bg-[#0e172e] border border-[#1c2b4c] shadow-2xl p-1.5 z-30 text-xs`}
+              >
+                <button
+                  onClick={() => {
+                    onExportData('csv');
+                    setShowExportMenu(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[#152445] text-slate-300 text-left transition cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+                  <span>{language === 'ar' ? 'تصدير CSV (Excel)' : 'Export CSV (Excel)'}</span>
+                </button>
+                <button
+                  onClick={() => {
+                    onExportData('json');
+                    setShowExportMenu(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[#152445] text-slate-300 text-left transition cursor-pointer"
+                >
+                  <FileJson className="w-4 h-4 text-cyan-400" />
+                  <span>{language === 'ar' ? 'تصدير JSON (بيانات)' : 'Export JSON (Data)'}</span>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Print Report */}
@@ -87,12 +156,12 @@ export const ViewControls: React.FC<ViewControlsProps> = ({
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#101b33] hover:bg-[#152445] text-slate-200 border border-[#1c2b4c] transition cursor-pointer"
           >
             <Printer className="w-3.5 h-3.5 text-cyan-400" />
-            <span>{language === 'ar' ? 'طباعة التقرير الشامل' : 'Print Report'}</span>
+            <span>{language === 'ar' ? 'طباعة التقرير' : 'Print Report'}</span>
           </button>
         </div>
       </div>
 
-      {/* Advanced Filter Bar (Item 8) */}
+      {/* Advanced Filter Bar */}
       <div className="flex items-center gap-2 sm:gap-3 flex-wrap text-xs bg-[#09101f] p-2.5 rounded-xl border border-[#1c2b4c]">
         <div className="flex items-center gap-1.5 text-cyan-400 font-bold">
           <Filter className="w-3.5 h-3.5" />
@@ -140,6 +209,7 @@ export const ViewControls: React.FC<ViewControlsProps> = ({
           <option value="Sinopec">Sinopec Oilfield Service</option>
           <option value="Weatherford">Weatherford</option>
           <option value="Baker">Baker Hughes</option>
+          <option value="Schlumberger">Schlumberger (SLB)</option>
         </select>
 
         {/* Reset Filters */}

@@ -18,7 +18,8 @@ import {
   Sparkles,
   RefreshCw,
   Lock,
-  CheckCircle2
+  CheckCircle2,
+  Clock
 } from 'lucide-react';
 import { Language, PTWItem, GasReading, NotificationItem, PTWStatus } from '../types';
 import { evaluateGasReadings } from '../utils/gasValidation';
@@ -633,7 +634,45 @@ export const PermitModal: React.FC<PermitModalProps> = ({
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-[10px] text-slate-400 block">{language === 'ar' ? 'نافذة الصلاحية الزمنية' : 'Validity Window'}</label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] text-slate-400 block">{language === 'ar' ? 'نافذة الصلاحية الزمنية' : 'Validity Window'}</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const extended = (formData.validityWindow || 'Standard Shift') + ' [+12h Ext by ' + currentUser.name + ']';
+                          const extendedAr = (formData.validityWindowAr || formData.validityWindow || 'وردية قياسية') + ' [تمديد 12 ساعة - ' + currentUser.name + ']';
+                          const now = new Date();
+                          const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                          setFormData((prev) => ({
+                            ...prev,
+                            validityWindow: extended,
+                            validityWindowAr: extendedAr,
+                            auditTrail: [
+                              {
+                                id: 'aud-ext-' + Date.now(),
+                                titleEn: 'Shift Validity Extended (+12h)',
+                                titleAr: 'تمديد فترة صلاحية الوردية (+12 ساعة)',
+                                detailEn: `Validity extended by ${currentUser.name} (${currentUser.role}, Badge: ${currentUser.badgeId}). Routine gas monitoring re-confirmed.`,
+                                detailAr: `تم تمديد صلاحية التصريح 12 ساعة بواسطة ${currentUser.name} (شارة: ${currentUser.badgeId}).`,
+                                timestamp: timeStr,
+                                severity: 'info',
+                                userId: currentUser.id,
+                                userName: currentUser.name,
+                              },
+                              ...prev.auditTrail,
+                            ],
+                          }));
+                          onShowToast(
+                            language === 'ar' ? 'تم تمديد الوردية 12 ساعة بنجاح وتسجيل التمديد في سجل التدقيق ✓' : 'Shift extended by 12 hours & recorded in audit trail ✓',
+                            'success'
+                          );
+                        }}
+                        className="px-2 py-0.5 rounded bg-cyan-950 hover:bg-cyan-900 border border-cyan-600/40 text-cyan-300 font-mono text-[9px] flex items-center gap-1 cursor-pointer transition"
+                      >
+                        <Clock className="w-2.5 h-2.5" />
+                        <span>{language === 'ar' ? '+ تمديد 12 ساعة' : '+ Extend 12h'}</span>
+                      </button>
+                    </div>
                     <input
                       type="text"
                       value={language === 'ar' ? formData.validityWindowAr : formData.validityWindow}
