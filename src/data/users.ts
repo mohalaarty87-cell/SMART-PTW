@@ -1,0 +1,48 @@
+import { User } from '../types';
+
+export const INITIAL_USERS: User[] = [
+  {
+    id: 'usr-hse-01',
+    name: 'Eng. Ammar Al-Haidari',
+    nameAr: 'م. عمار الحيدري',
+    email: 'hse@zfod.iq',
+    role: 'HSE_OFFICER',
+    badgeId: 'HSE-AUTH-01',
+    departmentEn: 'ZFOD HSE & Industrial Safety Division',
+    departmentAr: 'قسم السلامة والصحة والبيئة المهنية (ZFOD)',
+    avatar: '🛡️',
+  },
+  {
+    id: 'usr-admin-01',
+    name: 'Eng. Ziyad Fadhil Al-Kaabi',
+    nameAr: 'م. زياد فاضل الكعبي',
+    email: 'admin@zfod.iq',
+    role: 'ADMIN',
+    badgeId: 'ZFOD-MGR-01',
+    departmentEn: 'Zubair Field Operations Management',
+    departmentAr: 'إدارة العمليات المركزية بحقل الزبير',
+    avatar: '⚡',
+  },
+  {
+    id: 'usr-contractor-01',
+    name: 'Tariq Al-Janabi',
+    nameAr: 'طارق الجنابي',
+    email: 'contractor@eni.com',
+    role: 'CONTRACTOR',
+    badgeId: 'CONT-ENI-99',
+    departmentEn: 'Mechanical & Piping Contractor (Eni JV)',
+    departmentAr: 'مقاول الصيانة والأنابيب الميكانيكية',
+    avatar: '🔧',
+  },
+  {
+    id: 'usr-auditor-01',
+    name: 'Dr. Sarah Jenkins',
+    nameAr: 'د. سارة جينكينز',
+    email: 'auditor@osha-audit.org',
+    role: 'AUDITOR',
+    badgeId: 'AUDIT-INTL-04',
+    departmentEn: 'Independent ISO 45001 / OSHA Auditor',
+    departmentAr: 'هيئة التفتيش والتدقيق الدولي المستقل',
+    avatar: '📋',
+  },
+];

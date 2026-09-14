@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Menu, Search, Zap, Globe, Bell, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
-import { Language } from '../types';
+import { Menu, Search, Zap, Globe, Bell, CheckCircle2, AlertTriangle, ShieldCheck, UserCheck, KeyRound } from 'lucide-react';
+import { Language, NotificationItem } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 interface HeaderProps {
   language: Language;
@@ -10,6 +11,8 @@ interface HeaderProps {
   onToggleSidebar: () => void;
   onAutoFillData: () => void;
   onShowToast: (msg: string, type: 'info' | 'success' | 'error') => void;
+  notifications: NotificationItem[];
+  onOpenLoginModal: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -20,38 +23,28 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleSidebar,
   onAutoFillData,
   onShowToast,
+  notifications,
+  onOpenLoginModal,
 }) => {
+  const { currentUser } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
 
-  const notifications = [
-    {
-      id: 1,
-      titleAr: 'تنبيه فحص الغاز الدوري',
-      titleEn: 'Periodic Gas Testing Due',
-      descAr: 'مطلوب فحص دوري للغازات عند الساعة 13:00 لموقع Header-4',
-      descEn: 'Periodic gas test required at 13:00 for Header-4 site',
-      time: '12:45',
-      urgent: true,
-    },
-    {
-      id: 2,
-      titleAr: 'اعتماد تصريح الأشعة RAD-084',
-      titleEn: 'RAD-084 Radiography Approved',
-      descAr: 'تم توقيع كافة بنود تصريح فحص الأشعة للوردية الليلية',
-      descEn: 'All sections of Radiography permit signed for night shift',
-      time: '11:15',
-      urgent: false,
-    },
-    {
-      id: 3,
-      titleAr: 'اكتمال العزل الكهربائي LOTO',
-      titleEn: 'LOTO Electrical Lock Completed',
-      descAr: 'تم قفل وتأريض القاطع Feeder C-14 لمضخة P-102A',
-      descEn: 'Feeder C-14 breaker racked out and padlocked for pump P-102A',
-      time: '07:15',
-      urgent: false,
-    },
-  ];
+  const urgentCount = notifications.filter((n) => n.urgent).length;
+
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case 'ADMIN':
+        return 'from-purple-600 to-indigo-600';
+      case 'HSE_OFFICER':
+        return 'from-emerald-600 to-teal-600';
+      case 'CONTRACTOR':
+        return 'from-amber-600 to-orange-600';
+      case 'AUDITOR':
+        return 'from-cyan-600 to-blue-600';
+      default:
+        return 'from-slate-600 to-slate-700';
+    }
+  };
 
   return (
     <header className="relative z-40 h-20 bg-[#0b1324]/95 backdrop-blur-md border-b border-[#1c2b4c] flex items-center justify-between px-4 lg:px-7 sticky top-0 shadow-2xl">
@@ -88,46 +81,51 @@ export const Header: React.FC<HeaderProps> = ({
                 v5.4 HSE-OSHA
               </span>
             </div>
-            <span className="text-xs text-[#9fb3c8] font-medium hidden md:inline-block">
-              {language === 'ar'
-                ? 'Zubair Field Operating Division | هيئة تشغيل حقل الزبير'
-                : 'Zubair Field Operating Division | Basra, Iraq'}
-            </span>
+            <div className="flex items-center gap-2 text-xs text-[#9fb3c8] hidden sm:flex">
+              <span className="font-semibold">
+                {language === 'ar'
+                  ? 'هيئة تشغيل حقل الزبير النفطي • شركة نفط البصرة'
+                  : 'Zubair Field Operating Division • Basra Oil Company'}
+              </span>
+              <span className="text-slate-500">•</span>
+              <span className="text-emerald-400 font-mono flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 status-pulse" />
+                <span>Station ZUB-01</span>
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Quick Search Input */}
-      <div className="hidden xl:flex items-center relative w-80">
-        <Search className={`w-4 h-4 text-slate-400 absolute pointer-events-none ${language === 'ar' ? 'right-3' : 'left-3'}`} />
-        <input
-          id="global-search-input"
-          type="text"
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          placeholder={language === 'ar' ? 'بحث برقم التصريح أو الموقع أو المقاول...' : 'Search PTW Code, Location, Contractor...'}
-          className={`w-full py-1.5 text-xs rounded-lg bg-[#101b33]/90 border border-[#1c2b4c] text-slate-100 focus:outline-none focus:border-cyan-500 placeholder-slate-500 transition ${
-            language === 'ar' ? 'pr-9 pl-4 text-right' : 'pl-9 pr-4 text-left'
-          }`}
-        />
-        {searchQuery && (
-          <button
-            onClick={() => onSearchChange('')}
-            className={`absolute text-xs text-slate-400 hover:text-white ${language === 'ar' ? 'left-2.5' : 'right-2.5'}`}
-          >
-            ✕
-          </button>
-        )}
+      {/* Global Search Bar */}
+      <div className="hidden md:flex items-center flex-1 max-w-md mx-6">
+        <div className="relative w-full">
+          <input
+            id="global-search-input"
+            type="text"
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder={
+              language === 'ar'
+                ? 'بحث سريع برقم التصريح، الموقع، نوع الخطر، المقاول...'
+                : 'Search by Permit No, Location, Risk Level, Contractor...'
+            }
+            className="w-full bg-[#101b33] border border-[#1c2b4c] text-white text-xs rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 transition placeholder-[#627d98]"
+          />
+          <Search className="w-4 h-4 text-[#627d98] absolute left-3.5 top-3" />
+          {searchQuery && (
+            <button
+              onClick={() => onSearchChange('')}
+              className="absolute right-3 top-2.5 text-xs text-slate-400 hover:text-white"
+            >
+              ✕
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Action Strip */}
-      <div className="flex items-center gap-2 sm:gap-3">
-        {/* Real-Time Operational Tag */}
-        <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-semibold">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 status-pulse" />
-          <span>{language === 'ar' ? 'النظام يعمل بكفاءة 100%' : 'SYSTEM OPERATIONAL 100%'}</span>
-        </div>
-
+      {/* Action Controls & User Identity */}
+      <div className="flex items-center gap-2.5 sm:gap-3">
         {/* Auto Fill Data */}
         <button
           id="btn-autofill-demo"
@@ -136,7 +134,7 @@ export const Header: React.FC<HeaderProps> = ({
           className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 hover:text-cyan-100 text-xs font-semibold transition cursor-pointer"
         >
           <Zap className="w-3.5 h-3.5 text-cyan-400" />
-          <span>{language === 'ar' ? 'تعبئة ذكية للبيانات' : 'Smart Auto-Fill'}</span>
+          <span>{language === 'ar' ? 'تعبئة بيانات' : 'Sample Data'}</span>
         </button>
 
         {/* Language Toggle */}
@@ -158,9 +156,15 @@ export const Header: React.FC<HeaderProps> = ({
             title={language === 'ar' ? 'الإشعارات والتنبيهات' : 'Notifications'}
           >
             <Bell className="w-5 h-5" />
-            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-600 text-white text-[10px] font-bold flex items-center justify-center">
-              {notifications.length}
-            </span>
+            {notifications.length > 0 && (
+              <span
+                className={`absolute -top-1 -right-1 w-4 h-4 rounded-full text-white text-[10px] font-bold flex items-center justify-center ${
+                  urgentCount > 0 ? 'bg-rose-600 animate-pulse' : 'bg-cyan-600'
+                }`}
+              >
+                {notifications.length}
+              </span>
+            )}
           </button>
 
           {showNotifications && (
@@ -180,43 +184,61 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
 
               <div className="space-y-2 max-h-64 overflow-y-auto">
-                {notifications.map((n) => (
-                  <div
-                    key={n.id}
-                    onClick={() => {
-                      setShowNotifications(false);
-                      onShowToast(language === 'ar' ? n.descAr : n.descEn, n.urgent ? 'error' : 'info');
-                    }}
-                    className="p-2.5 rounded-lg bg-[#101b33]/80 hover:bg-[#152445] border border-[#1c2b4c] text-xs space-y-1 cursor-pointer transition"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className={`font-bold flex items-center gap-1 ${n.urgent ? 'text-rose-400' : 'text-slate-200'}`}>
-                        {n.urgent && <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />}
-                        {language === 'ar' ? n.titleAr : n.titleEn}
-                      </span>
-                      <span className="font-mono text-[10px] text-slate-400">{n.time}</span>
+                {notifications.length === 0 ? (
+                  <p className="text-xs text-slate-400 text-center py-3">
+                    {language === 'ar' ? 'لا توجد تنبيهات نشطة حالياً' : 'No active alerts'}
+                  </p>
+                ) : (
+                  notifications.map((n) => (
+                    <div
+                      key={n.id}
+                      onClick={() => {
+                        setShowNotifications(false);
+                        onShowToast(language === 'ar' ? n.descAr : n.descEn, n.urgent ? 'error' : 'info');
+                      }}
+                      className={`p-2.5 rounded-lg border text-xs space-y-1 cursor-pointer transition ${
+                        n.urgent
+                          ? 'bg-rose-950/40 border-rose-500/50 hover:bg-rose-950/70'
+                          : 'bg-[#101b33]/80 hover:bg-[#152445] border-[#1c2b4c]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className={`font-bold flex items-center gap-1 ${n.urgent ? 'text-rose-400' : 'text-slate-200'}`}>
+                          {n.urgent && <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />}
+                          {language === 'ar' ? n.titleAr : n.titleEn}
+                        </span>
+                        <span className="font-mono text-[10px] text-slate-400">{n.time}</span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 leading-relaxed">
+                        {language === 'ar' ? n.descAr : n.descEn}
+                      </p>
                     </div>
-                    <p className="text-[11px] text-slate-400 leading-relaxed">
-                      {language === 'ar' ? n.descAr : n.descEn}
-                    </p>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           )}
         </div>
 
-        {/* User Profile Pill */}
-        <div className="hidden sm:flex items-center gap-2.5 pl-2 pr-3 py-1 rounded-lg bg-[#101b33] border border-[#1c2b4c]">
-          <div className="w-8 h-8 rounded-md bg-gradient-to-tr from-cyan-600 to-emerald-600 flex items-center justify-center text-white text-xs font-bold font-mono">
-            HSE
+        {/* User Profile Pill with One-Click Role Switcher */}
+        <div
+          onClick={onOpenLoginModal}
+          title={language === 'ar' ? 'انقر لتغيير المستخدم أو الصلاحية' : 'Click to Switch User / Role'}
+          className="flex items-center gap-2.5 pl-2 pr-3 py-1 rounded-lg bg-[#101b33] border border-[#1c2b4c] hover:border-cyan-500 transition cursor-pointer"
+        >
+          <div
+            className={`w-8 h-8 rounded-md bg-gradient-to-tr ${getRoleBadgeColor(
+              currentUser.role
+            )} flex items-center justify-center text-white text-xs font-bold font-mono shadow`}
+          >
+            {currentUser.avatar || '👤'}
           </div>
-          <div className="flex flex-col text-right">
+          <div className="flex flex-col text-right hidden sm:flex">
             <span className="text-xs font-bold text-slate-200 leading-tight">
-              {language === 'ar' ? 'م. عمار الحيدري' : 'Eng. Ammar Al-Haidari'}
+              {language === 'ar' ? currentUser.nameAr : currentUser.name}
             </span>
             <span className="text-[10px] text-cyan-400 font-mono">
-              Lead Safety Auth. (ZFOD)
+              {currentUser.role} • ID: {currentUser.badgeId}
             </span>
           </div>
         </div>

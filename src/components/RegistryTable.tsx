@@ -1,12 +1,16 @@
 import React from 'react';
-import { ExternalLink, CheckCircle, Flame, Snowflake, Radiation, Zap } from 'lucide-react';
+import { ExternalLink, CheckCircle, Flame, Snowflake, Radiation, Zap, AlertTriangle } from 'lucide-react';
 import { Language, PTWItem } from '../types';
+import { checkPermitValidity } from '../utils/validityHelper';
 
 interface RegistryTableProps {
   language: Language;
   items: Record<string, PTWItem>;
   searchQuery: string;
   onOpenModal: (key: string) => void;
+  statusFilter?: string;
+  riskFilter?: string;
+  contractorFilter?: string;
 }
 
 export const RegistryTable: React.FC<RegistryTableProps> = ({
@@ -14,25 +18,44 @@ export const RegistryTable: React.FC<RegistryTableProps> = ({
   items,
   searchQuery,
   onOpenModal,
+  statusFilter = 'ALL',
+  riskFilter = 'ALL',
+  contractorFilter = 'ALL',
 }) => {
   const allKeys = Object.keys(items);
 
-  const matchesQuery = (item: PTWItem) => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase().trim();
-    return (
-      item.permitNo.toLowerCase().includes(q) ||
-      item.titleEn.toLowerCase().includes(q) ||
-      item.titleAr.toLowerCase().includes(q) ||
-      item.locationEn.toLowerCase().includes(q) ||
-      item.locationAr.toLowerCase().includes(q) ||
-      item.contractorEn.toLowerCase().includes(q) ||
-      item.contractorAr.toLowerCase().includes(q) ||
-      item.risk.toLowerCase().includes(q)
-    );
+  const matchesFilters = (item: PTWItem) => {
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      const matchText = (
+        item.permitNo.toLowerCase().includes(q) ||
+        item.titleEn.toLowerCase().includes(q) ||
+        item.titleAr.toLowerCase().includes(q) ||
+        item.locationEn.toLowerCase().includes(q) ||
+        item.locationAr.toLowerCase().includes(q) ||
+        item.contractorEn.toLowerCase().includes(q) ||
+        item.contractorAr.toLowerCase().includes(q) ||
+        item.risk.toLowerCase().includes(q)
+      );
+      if (!matchText) return false;
+    }
+
+    if (statusFilter !== 'ALL' && item.status !== statusFilter) {
+      return false;
+    }
+
+    if (riskFilter !== 'ALL' && item.risk !== riskFilter) {
+      return false;
+    }
+
+    if (contractorFilter !== 'ALL' && !item.contractorEn.toLowerCase().includes(contractorFilter.toLowerCase())) {
+      return false;
+    }
+
+    return true;
   };
 
-  const filteredItems = allKeys.map((k) => items[k]).filter(matchesQuery);
+  const filteredItems = allKeys.map((k) => items[k]).filter(matchesFilters);
 
   return (
     <div className="space-y-4 animate-in fade-in duration-300">
@@ -45,56 +68,87 @@ export const RegistryTable: React.FC<RegistryTableProps> = ({
               <th className="p-3.5">{language === 'ar' ? 'مستوى الخطر' : 'Risk Rating'}</th>
               <th className="p-3.5">{language === 'ar' ? 'الموقع الفعلي' : 'Physical Location'}</th>
               <th className="p-3.5">{language === 'ar' ? 'الجهة المنفذة' : 'Contractor / Unit'}</th>
-              <th className="p-3.5">{language === 'ar' ? 'فحص الغاز / تدابير السلامة' : 'Safety / LOTO Verification'}</th>
+              <th className="p-3.5">{language === 'ar' ? 'الصلاحية والغاز' : 'Validity & Gas Test'}</th>
               <th className="p-3.5">{language === 'ar' ? 'الحالة' : 'Status'}</th>
               <th className="p-3.5 text-center">{language === 'ar' ? 'الإجراءات' : 'Actions'}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#1c2b4c] text-slate-200">
-            {filteredItems.map((item) => (
-              <tr key={item.id} className="hover:bg-[#152445]/60 transition">
-                <td className="p-3.5 font-mono text-cyan-400 font-bold whitespace-nowrap">
-                  <span className="flex items-center gap-1.5">
-                    <span>{item.icon}</span>
-                    <span>{item.permitNo}</span>
-                  </span>
-                </td>
-                <td className="p-3.5 font-semibold max-w-xs">
-                  <div>{language === 'ar' ? item.titleAr : item.titleEn}</div>
-                  <div className="text-[11px] text-[#627d98] truncate">
-                    {language === 'ar' ? item.subTitleAr : item.subTitleEn}
-                  </div>
-                </td>
-                <td className="p-3.5 whitespace-nowrap">
-                  <span className={`${item.riskBadgeClass} text-[10px] px-2 py-0.5 rounded font-mono font-bold`}>
-                    {item.risk}
-                  </span>
-                </td>
-                <td className="p-3.5 text-slate-300 whitespace-nowrap font-mono text-[11px]">
-                  {language === 'ar' ? item.locationAr : item.locationEn}
-                </td>
-                <td className="p-3.5 text-slate-300 whitespace-nowrap">
-                  {language === 'ar' ? item.contractorAr : item.contractorEn}
-                </td>
-                <td className="p-3.5 text-emerald-400 font-mono text-[11px] max-w-[200px] truncate">
-                  {item.safetyRadiusEn}
-                </td>
-                <td className="p-3.5 whitespace-nowrap">
-                  <span className="badge-success text-[10px] px-2 py-0.5 rounded font-bold">
-                    {language === 'ar' ? item.statusAr : item.status}
-                  </span>
-                </td>
-                <td className="p-3.5 text-center whitespace-nowrap">
-                  <button
-                    onClick={() => onOpenModal(item.key)}
-                    className="px-2.5 py-1 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/50 font-semibold text-xs flex items-center gap-1 mx-auto transition cursor-pointer"
-                  >
-                    <span>{language === 'ar' ? 'عرض وتدقيق' : 'Inspect'}</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {filteredItems.map((item) => {
+              const validity = checkPermitValidity(item.validityWindow);
+              const isCriticalGas = item.gasCriticalWarningActive || (item.gasTests || []).some((g) => g.status === 'CRITICAL');
+              const isSuspended = item.status === 'SUSPENDED';
+
+              return (
+                <tr
+                  key={item.id}
+                  className={`hover:bg-[#152445]/60 transition ${
+                    isCriticalGas || isSuspended ? 'bg-rose-950/20' : ''
+                  }`}
+                >
+                  <td className="p-3.5 font-mono text-cyan-400 font-bold whitespace-nowrap">
+                    <span className="flex items-center gap-1.5">
+                      <span>{item.icon}</span>
+                      <span>{item.permitNo}</span>
+                    </span>
+                  </td>
+                  <td className="p-3.5">
+                    <div className="font-bold text-white">
+                      {language === 'ar' ? item.titleAr : item.titleEn}
+                    </div>
+                    <div className="text-[11px] text-slate-400 line-clamp-1">
+                      {language === 'ar' ? item.subTitleAr : item.subTitleEn}
+                    </div>
+                  </td>
+                  <td className="p-3.5">
+                    <span className={`${item.riskBadgeClass} px-2 py-0.5 rounded font-mono text-[10px] font-bold whitespace-nowrap`}>
+                      {item.risk}
+                    </span>
+                  </td>
+                  <td className="p-3.5 text-slate-300">
+                    {language === 'ar' ? item.locationAr : item.locationEn}
+                  </td>
+                  <td className="p-3.5 text-cyan-300 font-semibold">
+                    {language === 'ar' ? item.contractorAr : item.contractorEn}
+                  </td>
+                  <td className="p-3.5 font-mono text-[11px]">
+                    <div className={validity.isExpiringSoon ? 'text-amber-400 font-bold' : 'text-slate-300'}>
+                      {language === 'ar' ? validity.labelAr : validity.labelEn}
+                    </div>
+                    {isCriticalGas ? (
+                      <span className="text-rose-400 font-bold flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" />
+                        CRITICAL GAS
+                      </span>
+                    ) : (
+                      <span className="text-emerald-400">
+                        {item.gasTests.length} Samples (SAFE)
+                      </span>
+                    )}
+                  </td>
+                  <td className="p-3.5">
+                    <span
+                      className={`px-2.5 py-1 rounded font-mono text-[10px] font-bold border whitespace-nowrap ${
+                        isSuspended || isCriticalGas
+                          ? 'bg-rose-950 text-rose-300 border-rose-500 animate-pulse'
+                          : 'bg-cyan-950 text-cyan-300 border-cyan-700/50'
+                      }`}
+                    >
+                      {language === 'ar' ? item.statusAr : item.status}
+                    </span>
+                  </td>
+                  <td className="p-3.5 text-center">
+                    <button
+                      onClick={() => onOpenModal(item.key)}
+                      className="px-3 py-1 rounded-lg bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 text-xs font-semibold inline-flex items-center gap-1 transition cursor-pointer"
+                    >
+                      <span>{language === 'ar' ? 'فتح' : 'View'}</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

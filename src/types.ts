@@ -2,6 +2,33 @@ export type Language = 'ar' | 'en';
 export type ViewMode = 'grid' | 'table';
 export type RiskLevel = 'CRITICAL RISK' | 'HIGH RISK (CLASS A)' | 'HIGH RISK' | 'MEDIUM RISK' | 'CRITICAL (3.3 kV)' | 'CRITICAL';
 
+export type UserRole = 'ADMIN' | 'HSE_OFFICER' | 'CONTRACTOR' | 'AUDITOR';
+
+export interface User {
+  id: string;
+  name: string;
+  nameAr: string;
+  email: string;
+  role: UserRole;
+  badgeId: string;
+  departmentEn: string;
+  departmentAr: string;
+  avatar?: string;
+}
+
+export type PTWStatus =
+  | 'DRAFT'
+  | 'SUBMITTED'
+  | 'UNDER_REVIEW'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'ACTIVE'
+  | 'SUSPENDED'
+  | 'MONITORED'
+  | 'VALIDATED'
+  | 'ISOLATED'
+  | 'CLOSED';
+
 export interface GasReading {
   id: string;
   time: string;
@@ -12,6 +39,7 @@ export interface GasReading {
   tester: string;
   signature: string;
   status: 'SAFE' | 'WARNING' | 'CRITICAL';
+  violations?: string[];
 }
 
 export interface ChecklistVerificationItem {
@@ -31,6 +59,8 @@ export interface SignatureEntry {
   badgeId: string;
   signedAt: string;
   status: 'DIGITALLY SIGNED' | 'PENDING';
+  userId?: string;
+  userEmail?: string;
 }
 
 export interface AuditEventItem {
@@ -40,7 +70,9 @@ export interface AuditEventItem {
   detailEn: string;
   detailAr: string;
   timestamp: string;
-  severity: 'normal' | 'info' | 'success' | 'warning';
+  severity: 'normal' | 'info' | 'success' | 'warning' | 'danger';
+  userId?: string;
+  userName?: string;
 }
 
 export interface PTWItem {
@@ -62,7 +94,7 @@ export interface PTWItem {
   validityWindow: string;
   validityWindowAr: string;
   attachedCerts: string[];
-  status: 'ACTIVE' | 'APPROVED' | 'MONITORED' | 'VALIDATED' | 'ISOLATED';
+  status: PTWStatus;
   statusAr: string;
   technicalSpecLabelEn: string;
   technicalSpecLabelAr: string;
@@ -92,6 +124,24 @@ export interface PTWItem {
   peopleNight?: number;
   hazardousNotes?: string;
   specialPrecautions?: string;
+
+  // Metadata
+  createdByUserId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  gasCriticalWarningActive?: boolean;
+}
+
+export interface NotificationItem {
+  id: string;
+  titleAr: string;
+  titleEn: string;
+  descAr: string;
+  descEn: string;
+  time: string;
+  urgent: boolean;
+  type?: 'gas' | 'expiry' | 'approval' | 'system' | 'loto';
+  permitNo?: string;
 }
 
 export interface ToastMessage {
@@ -99,3 +149,4 @@ export interface ToastMessage {
   message: string;
   type: 'info' | 'success' | 'error';
 }
+
