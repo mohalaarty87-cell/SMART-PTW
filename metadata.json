@@ -1,0 +1,6 @@
+{
+  "name": "ZFOD SMART PTW - Electronic Permit To Work System",
+  "description": "Zubair Field Operating Division (ZFOD) digital Permit To Work (PTW) and industrial safety management platform for oil & gas facilities.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
